@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Block Blast ✨</title>
   <style>
-    /* ... (все прежние стили) + новые для анимаций ... */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -77,7 +76,6 @@
       50% { transform: scale(1.1); opacity: 0.8; }
       100% { transform: scale(0); opacity: 0; }
     }
-
     .preview-area {
       display: flex;
       justify-content: center;
@@ -94,6 +92,7 @@
       cursor: grab;
       transition: transform 0.2s;
       animation: fadeIn 0.5s ease-out;
+      position: relative;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -114,9 +113,6 @@
       border-radius: 5px;
       box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
     }
-    .controls {
-      margin: 14px 0;
-    }
     button {
       background: linear-gradient(to right, #6a11cb, #2575fc);
       color: white;
@@ -132,16 +128,6 @@
     button:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-    }
-    button:active {
-      transform: translateY(1px);
-    }
-    .settings {
-      margin-top: 16px;
-      text-align: center;
-    }
-    .difficulty button {
-      background: #4a4a7a;
     }
     .modal {
       position: fixed;
@@ -169,11 +155,6 @@
       border: 1px solid #5a5a9a;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-    @media (max-width: 500px) {
-      .cell { width: 34px; height: 34px; }
-      .piece-cell { width: 18px; height: 18px; }
-      h1 { font-size: 1.5rem; }
-    }
   </style>
 </head>
 <body>
@@ -192,7 +173,6 @@
     <button id="settings-btn">⚙️ Настройки</button>
   </div>
 
-  <!-- Settings Modal -->
   <div class="modal" id="settings-modal">
     <div class="modal-content">
       <h3 style="margin-bottom:16px">🎮 Сложность</h3>
@@ -205,352 +185,312 @@
     </div>
   </div>
 
-  <script>
-    // 🔷 БОЛЬШЕ ФИГУР — 33 штуки!
-    const PIECES = [
-      // 1x1
-      [[1]],
-      // 2x1 / 1x2
-      [[1,1]], [[1],[1]],
-      // 3x1 / 1x3
-      [[1,1,1]], [[1],[1],[1]],
-      // L-образные (3+1)
-      [[1,0],[1,0],[1,1]], [[0,1],[0,1],[1,1]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]],
-      [[1,1],[1,0]], [[1,1],[0,1]], [[1,0],[1,1]], [[0,1],[1,1]],
-      // T-образные
-      [[1,1,1],[0,1,0]], [[1,0],[1,1],[1,0]], [[0,1],[1,1],[0,1]], [[1,1],[0,1],[0,1]],
-      // Z / S
-      [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]],
-      [[1,0],[1,1],[0,1]], [[0,1],[1,1],[1,0]],
-      // 2x2
-      [[1,1],[1,1]],
-      // 3x2 и 2x3 (разные формы)
-      [[1,1,1],[1,1,0]], [[1,1,0],[1,1,1]], [[1,1],[1,1],[1,0]], [[1,0],[1,1],[1,1]],
-      // "Уголки" 3x3 (меньше клеток)
-      [[1,0,0],[1,1,0],[0,1,0]], [[0,0,1],[0,1,1],[0,1,0]],
-      [[1,1,0],[0,1,1],[0,0,1]], [[0,1,1],[1,1,0],[1,0,0]],
-      // "Крест" 3x3
-      [[0,1,0],[1,1,1],[0,1,0]],
-      // "Квадрат с хвостом"
-      [[1,1],[1,1],[1,0]], [[1,1],[1,1],[0,1]],
-      [[1,1,1],[1,0,1]],
-      // Новые "сложные":
-      [[1,0,1],[0,1,0],[1,0,1]], // X
-      [[1,1,0,0],[0,1,1,0]],    // длинная Z
-      [[1,0,0],[1,1,0],[0,1,1]], // лесенка
-      [[0,1,0],[1,1,1],[1,0,1]], // "головастик"
-    ];
+<script>
 
-    // 💾 Глобальное состояние
-    let boardSize = 5;
-    let board = [];
-    let previewPieces = [];
-    let score = 0;
-    let isDragging = false;
-    let draggedPiece = null;
-    let draggedOffset = { x: 0, y: 0 };
-    let highscore = parseInt(localStorage.getItem('blockblast_highscore')) || 0;
+const PIECES = [
+  [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]],
+  [[1,0],[1,0],[1,1]], [[0,1],[0,1],[1,1]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]],
+  [[1,1],[1,0]], [[1,1],[0,1]], [[1,0],[1,1]], [[0,1],[1,1]],
+  [[1,1,1],[0,1,0]], [[1,0],[1,1],[1,0]], [[0,1],[1,1],[0,1]], [[1,1],[0,1],[0,1]],
+  [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]],
+  [[1,0],[1,1],[0,1]], [[0,1],[1,1],[1,0]],
+  [[1,1],[1,1]],
+  [[1,1,1],[1,1,0]], [[1,1,0],[1,1,1]],
+  [[1,1],[1,1],[1,0]], [[1,0],[1,1],[1,1]],
+  [[1,0,0],[1,1,0],[0,1,0]], [[0,0,1],[0,1,1],[0,1,0]],
+  [[1,1,0],[0,1,1],[0,0,1]], [[0,1,1],[1,1,0],[1,0,0]],
+  [[0,1,0],[1,1,1],[0,1,0]],
+  [[1,1],[1,1],[1,0]], [[1,1],[1,1],[0,1]],
+  [[1,1,1],[1,0,1]],
+  [[1,0,1],[0,1,0],[1,0,1]],
+  [[1,1,0,0],[0,1,1,0]],
+  [[1,0,0],[1,1,0],[0,1,1]],
+  [[0,1,0],[1,1,1],[1,0,1]],
+];
 
-    // 🔗 Элементы DOM
-    const boardEl = document.getElementById('board');
-    const previewEl = document.getElementById('preview-area');
-    const scoreEl = document.getElementById('score');
-    const highscoreEl = document.getElementById('highscore');
-    const newGameBtn = document.getElementById('new-game');
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettingsBtn = document.getElementById('close-settings');
+let boardSize = 5;
+let board = [];
+let previewPieces = [];
+let score = 0;
 
-    // ✅ Инициализация
-    highscoreEl.textContent = highscore;
-    initGame();
+let isDragging = false;
+let draggedPiece = null;
+let draggedOffset = {x:0,y:0};
 
-    // === ФУНКЦИИ ===
+let highscore = parseInt(localStorage.getItem('blockblast_highscore')) || 0;
 
-    function initGame() {
-      createBoard();
-      generatePreviewPieces();
-      renderBoard();
-      renderPreview();
-      score = 0;
-      scoreEl.textContent = score;
+const boardEl = document.getElementById("board");
+const previewEl = document.getElementById("preview-area");
+const scoreEl = document.getElementById("score");
+const highscoreEl = document.getElementById("highscore");
+
+highscoreEl.textContent = highscore;
+
+initGame();
+
+// =====================
+// INIT
+// =====================
+
+function initGame() {
+  createBoard();
+  generatePreviewPieces();
+  renderBoard();
+  renderPreview();
+  score = 0;
+  scoreEl.textContent = score;
+}
+
+function createBoard() {
+  board = Array(boardSize).fill().map(()=>Array(boardSize).fill(0));
+}
+
+function generatePreviewPieces() {
+  previewPieces = [];
+  for (let i=0;i<3;i++) {
+    const idx = Math.floor(Math.random()*PIECES.length);
+    previewPieces.push(JSON.parse(JSON.stringify(PIECES[idx])));
+  }
+}
+
+function renderBoard() {
+  boardEl.innerHTML = "";
+  boardEl.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
+
+  for (let r=0;r<boardSize;r++) {
+    for (let c=0;c<boardSize;c++) {
+      const cell=document.createElement("div");
+      cell.className="cell";
+      if (board[r][c]) cell.classList.add("filled");
+      cell.dataset.row=r;
+      cell.dataset.col=c;
+      boardEl.appendChild(cell);
     }
+  }
+}
 
-    function createBoard() {
-      board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-    }
+function renderPreview() {
+  previewEl.innerHTML="";
 
-    function generatePreviewPieces() {
-      previewPieces = [];
-      for (let i = 0; i < 3; i++) {
-        const idx = Math.floor(Math.random() * PIECES.length);
-        previewPieces.push(JSON.parse(JSON.stringify(PIECES[idx])));
+  previewPieces.forEach((piece,idx)=>{
+    const pieceEl=document.createElement("div");
+    pieceEl.className="piece";
+    pieceEl.dataset.idx = idx;
+    pieceEl.style.gridTemplateColumns = `repeat(${piece[0].length}, 1fr)`;
+
+    for (let r=0;r<piece.length;r++){
+      for (let c=0;c<piece[r].length;c++){
+        const cell=document.createElement("div");
+        if (piece[r][c]) cell.className="piece-cell";
+        pieceEl.appendChild(cell);
       }
     }
 
-    function renderBoard() {
-      boardEl.innerHTML = '';
-      boardEl.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
-      boardEl.style.gridTemplateRows = `repeat(${boardSize}, 1fr)`;
+    pieceEl.addEventListener("mousedown", startDrag);
+    pieceEl.addEventListener("touchstart", startDrag, {passive:false});
 
-      for (let r = 0; r < boardSize; r++) {
-        for (let c = 0; c < boardSize; c++) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-          if (board[r][c]) cell.classList.add('filled');
-          boardEl.appendChild(cell);
-        }
-      }
+    previewEl.appendChild(pieceEl);
+  });
+}
+
+// ===============================
+// FIXED DRAG & DROP SYSTEM
+// ===============================
+
+function startDrag(e){
+  e.preventDefault();
+  isDragging = true;
+  draggedPiece = e.currentTarget;
+
+  const rect = draggedPiece.getBoundingClientRect();
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  draggedOffset.x = clientX - rect.left;
+  draggedOffset.y = clientY - rect.top;
+
+  draggedPiece.style.position = "absolute";
+  draggedPiece.style.left = rect.left + "px";
+  draggedPiece.style.top = rect.top + "px";
+  draggedPiece.style.transform = "none";
+  draggedPiece.style.opacity = "0.8";
+  draggedPiece.style.zIndex = "1000";
+
+  document.body.appendChild(draggedPiece);
+
+  document.addEventListener("mousemove", drag);
+  document.addEventListener("touchmove", drag, {passive:false});
+  document.addEventListener("mouseup", endDrag);
+  document.addEventListener("touchend", endDrag);
+}
+
+function drag(e){
+  if (!isDragging) return;
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  draggedPiece.style.left = clientX - draggedOffset.x + "px";
+  draggedPiece.style.top = clientY - draggedOffset.y + "px";
+}
+
+function endDrag(e){
+  if (!isDragging) return;
+  isDragging=false;
+
+  draggedPiece.style.opacity="1";
+
+  const pieceRect = draggedPiece.getBoundingClientRect();
+  const centerX = pieceRect.left + pieceRect.width/2;
+  const centerY = pieceRect.top + pieceRect.height/2;
+
+  const boardRect = boardEl.getBoundingClientRect();
+
+  let placed = false;
+
+  if (
+    centerX >= boardRect.left &&
+    centerX <= boardRect.right &&
+    centerY >= boardRect.top &&
+    centerY <= boardRect.bottom
+  ) {
+    const cellSize = boardRect.width / boardSize;
+    const col = Math.floor((centerX - boardRect.left)/cellSize);
+    const row = Math.floor((centerY - boardRect.top)/cellSize);
+
+    const idx = parseInt(draggedPiece.dataset.idx);
+
+    if (canPlace(previewPieces[idx], row, col)) {
+      placePiece(idx, row, col);
+      placed = true;
     }
+  }
 
-    function renderPreview() {
-      previewEl.innerHTML = '';
-      previewPieces.forEach((piece, idx) => {
-        const pieceEl = document.createElement('div');
-        pieceEl.className = 'piece';
-        pieceEl.dataset.idx = idx;
-        pieceEl.style.gridTemplateColumns = `repeat(${piece[0].length}, 1fr)`;
-        pieceEl.style.gridTemplateRows = `repeat(${piece.length}, 1fr)`;
+  if (!placed){
+    draggedPiece.classList.add("shake");
+    setTimeout(()=>draggedPiece?.classList.remove("shake"),500);
+  }
 
-        for (let r = 0; r < piece.length; r++) {
-          for (let c = 0; c < piece[r].length; c++) {
-            const cell = document.createElement('div');
-            if (piece[r][c]) {
-              cell.className = 'piece-cell';
-            }
-            pieceEl.appendChild(cell);
-          }
-        }
+  draggedPiece.style.position="";
+  draggedPiece.style.left="";
+  draggedPiece.style.top="";
+  draggedPiece.style.zIndex="";
 
-        // 🖱️ Драг-события
-        pieceEl.addEventListener('mousedown', startDrag);
-        pieceEl.addEventListener('touchstart', startDrag, { passive: false });
+  draggedPiece=null;
 
-        previewEl.appendChild(pieceEl);
-      });
+  renderPreview();
+
+  document.removeEventListener("mousemove", drag);
+  document.removeEventListener("touchmove", drag);
+  document.removeEventListener("mouseup", endDrag);
+  document.removeEventListener("touchend", endDrag);
+}
+
+// =========================
+// GAME LOGIC
+// =========================
+
+function canPlace(piece,row,col){
+  for (let r=0;r<piece.length;r++){
+    for (let c=0;c<piece[r].length;c++){
+      if (!piece[r][c]) continue;
+
+      const nr=row+r, nc=col+c;
+      if (nr<0||nr>=boardSize||nc<0||nc>=boardSize) return false;
+      if (board[nr][nc]===1) return false;
     }
+  }
+  return true;
+}
 
-    // 🖱️ DRAG & DROP (универсальный)
-    function startDrag(e) {
-      e.preventDefault();
-      isDragging = true;
-      draggedPiece = e.currentTarget;
-      const rect = draggedPiece.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      draggedOffset.x = clientX - rect.left;
-      draggedOffset.y = clientY - rect.top;
+function placePiece(pieceIdx,row,col){
+  const piece = previewPieces[pieceIdx];
 
-      draggedPiece.style.opacity = '0.7';
-      draggedPiece.style.cursor = 'grabbing';
-      draggedPiece.style.zIndex = '100';
-
-      document.addEventListener('mousemove', drag);
-      document.addEventListener('touchmove', drag, { passive: false });
-      document.addEventListener('mouseup', endDrag);
-      document.addEventListener('touchend', endDrag);
+  for (let r=0;r<piece.length;r++){
+    for (let c=0;c<piece[r].length;c++){
+      if (piece[r][c]) board[row+r][col+c]=1;
     }
+  }
 
-    function drag(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  previewPieces.splice(pieceIdx,1);
+  const newIdx=Math.floor(Math.random()*PIECES.length);
+  previewPieces.push(JSON.parse(JSON.stringify(PIECES[newIdx])));
 
-      const x = clientX - draggedOffset.x;
-      const y = clientY - draggedOffset.y;
-      draggedPiece.style.transform = `translate(${x}px, ${y}px)`;
+  renderBoard();
+  setTimeout(()=>checkLines(),100);
+  checkGameOver();
+}
+
+function checkLines(){
+  const toClear=[];
+
+  for (let r=0;r<boardSize;r++){
+    if (board[r].every(c=>c===1)){
+      for (let c=0;c<boardSize;c++) toClear.push({r,c});
     }
-
-    function endDrag(e) {
-      if (!isDragging) return;
-      isDragging = false;
-
-      draggedPiece.style.opacity = '1';
-      draggedPiece.style.transform = '';
-      draggedPiece.style.cursor = 'grab';
-      draggedPiece.style.zIndex = '';
-
-      document.removeEventListener('mousemove', drag);
-      document.removeEventListener('touchmove', drag);
-      document.removeEventListener('mouseup', endDrag);
-      document.removeEventListener('touchend', endDrag);
-
-      // ✅ Попытка поставить
-      const boardRect = boardEl.getBoundingClientRect();
-      const pieceRect = draggedPiece.getBoundingClientRect();
-
-      const centerX = pieceRect.left + pieceRect.width / 2;
-      const centerY = pieceRect.top + pieceRect.height / 2;
-
-      if (
-        centerX >= boardRect.left &&
-        centerX <= boardRect.right &&
-        centerY >= boardRect.top &&
-        centerY <= boardRect.bottom
-      ) {
-        const cellSize = boardRect.width / boardSize;
-        const col = Math.floor((centerX - boardRect.left) / cellSize);
-        const row = Math.floor((centerY - boardRect.top) / cellSize);
-
-        const idx = parseInt(draggedPiece.dataset.idx);
-        if (canPlace(previewPieces[idx], row, col)) {
-          placePiece(idx, row, col);
-        } else {
-          // ❌ Тряска!
-          draggedPiece.classList.add('shake');
-          setTimeout(() => draggedPiece.classList.remove('shake'), 500);
-        }
-      }
-      renderPreview();
+  }
+  for (let c=0;c<boardSize;c++){
+    let full=true;
+    for (let r=0;r<boardSize;r++){
+      if (board[r][c]!==1){ full=false; break; }
     }
-
-    // 🧩 ЛОГИКА РАЗМЕЩЕНИЯ
-    function canPlace(piece, row, col) {
-      for (let r = 0; r < piece.length; r++) {
-        for (let c = 0; c < piece[r].length; c++) {
-          if (!piece[r][c]) continue;
-          const nr = row + r;
-          const nc = col + c;
-          if (nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) return false;
-          if (board[nr][nc] === 1) return false;
-        }
-      }
-      return true;
+    if (full){
+      for (let r=0;r<boardSize;r++) toClear.push({r,c});
     }
+  }
 
-    function placePiece(pieceIdx, row, col) {
-      const piece = previewPieces[pieceIdx];
-      // Установка
-      for (let r = 0; r < piece.length; r++) {
-        for (let c = 0; c < piece[r].length; c++) {
-          if (piece[r][c]) {
-            board[row + r][col + c] = 1;
-          }
-        }
-      }
+  if (toClear.length>0){
+    score+=toClear.length*10;
+    scoreEl.textContent=score;
 
-      // Обновление превью
-      previewPieces.splice(pieceIdx, 1);
-      const newIdx = Math.floor(Math.random() * PIECES.length);
-      previewPieces.push(JSON.parse(JSON.stringify(PIECES[newIdx])));
-
-      renderBoard();
-      setTimeout(() => checkLines(), 100); // небольшая задержка для плавности
-      checkGameOver();
-    }
-
-    // ✨ АНИМАЦИИ ОЧИСТКИ
-    function checkLines() {
-      const cellsToClear = [];
-
-      // Строки
-      for (let r = 0; r < boardSize; r++) {
-        if (board[r].every(cell => cell === 1)) {
-          for (let c = 0; c < boardSize; c++) {
-            cellsToClear.push({ r, c });
-          }
-        }
-      }
-
-      // Столбцы
-      for (let c = 0; c < boardSize; c++) {
-        let full = true;
-        for (let r = 0; r < boardSize; r++) {
-          if (board[r][c] !== 1) {
-            full = false; break;
-          }
-        }
-        if (full) {
-          for (let r = 0; r < boardSize; r++) {
-            cellsToClear.push({ r, c });
-          }
-        }
-      }
-
-      // Квадраты 3×3
-      if (boardSize >= 3) {
-        for (let r = 0; r <= boardSize - 3; r++) {
-          for (let c = 0; c <= boardSize - 3; c++) {
-            let full = true;
-            for (let dr = 0; dr < 3; dr++) {
-              for (let dc = 0; dc < 3; dc++) {
-                if (board[r+dr][c+dc] !== 1) {
-                  full = false; break;
-                }
-              }
-              if (!full) break;
-            }
-            if (full) {
-              for (let dr = 0; dr < 3; dr++) {
-                for (let dc = 0; dc < 3; dc++) {
-                  cellsToClear.push({ r: r+dr, c: c+dc });
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (cellsToClear.length > 0) {
-        // Анимация исчезновения
-        cellsToClear.forEach(({r, c}) => {
-          const cellEl = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
-          if (cellEl) cellEl.classList.add('clearing');
-        });
-
-        score += cellsToClear.length * 10; // бонус за клетки
-        scoreEl.textContent = score;
-
-        // Через 400ms — очистка в массиве
-        setTimeout(() => {
-          cellsToClear.forEach(({r, c}) => {
-            board[r][c] = 0;
-          });
-          renderBoard();
-        }, 400);
-      }
-    }
-
-    function checkGameOver() {
-      for (let piece of previewPieces) {
-        for (let r = 0; r < boardSize; r++) {
-          for (let c = 0; c < boardSize; c++) {
-            if (canPlace(piece, r, c)) return;
-          }
-        }
-      }
-
-      // 🏁 Игра окончена
-      if (score > highscore) {
-        highscore = score;
-        localStorage.setItem('blockblast_highscore', highscore);
-        highscoreEl.textContent = highscore;
-      }
-
-      setTimeout(() => {
-        alert(`🎮 Игра окончена!\nВаш счёт: ${score}${score === highscore ? '\n🏆 Новый рекорд!' : ''}`);
-      }, 300);
-    }
-
-    // 🎛️ Обработчики кнопок
-    newGameBtn.addEventListener('click', initGame);
-    settingsBtn.addEventListener('click', () => settingsModal.classList.add('active'));
-    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
-
-    document.querySelectorAll('[data-diff]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        boardSize = parseInt(btn.dataset.diff);
-        settingsModal.classList.remove('active');
-        initGame();
-      });
+    toClear.forEach(({r,c})=>{
+      const cell=document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+      if (cell) cell.classList.add("clearing");
     });
 
-    document.body.addEventListener('touchmove', e => {
-      if (isDragging) e.preventDefault();
-    }, { passive: false });
-  </script>
+    setTimeout(()=>{
+      toClear.forEach(({r,c})=>board[r][c]=0);
+      renderBoard();
+    },400);
+  }
+}
+
+function checkGameOver(){
+  for (let piece of previewPieces){
+    for (let r=0;r<boardSize;r++){
+      for (let c=0;c<boardSize;c++){
+        if (canPlace(piece,r,c)) return;
+      }
+    }
+  }
+
+  if (score>highscore){
+    highscore=score;
+    localStorage.setItem("blockblast_highscore",highscore);
+    highscoreEl.textContent=highscore;
+  }
+
+  setTimeout(()=>alert("Игра окончена! Ваш счёт: "+score),300);
+}
+
+// SETTINGS
+document.getElementById("new-game").addEventListener("click", initGame);
+document.getElementById("settings-btn").addEventListener("click", ()=>settingsModal.classList.add("active"));
+document.getElementById("close-settings").addEventListener("click", ()=>settingsModal.classList.remove("active"));
+
+document.querySelectorAll("[data-diff]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    boardSize=parseInt(btn.dataset.diff);
+    settingsModal.classList.remove("active");
+    initGame();
+  });
+});
+
+document.body.addEventListener("touchmove",(e)=>{
+  if (isDragging) e.preventDefault();
+},{passive:false});
+
+</script>
 </body>
 </html>
