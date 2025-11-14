@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Block Blast</title>
+  <title>Block Blast ✨</title>
   <style>
+    /* ... (все прежние стили) + новые для анимаций ... */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -14,7 +15,7 @@
     }
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #1a1a2e;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       color: #fff;
       display: flex;
       flex-direction: column;
@@ -25,113 +26,158 @@
     h1 {
       margin: 10px 0;
       font-size: 1.8rem;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
     .stats {
       display: flex;
       gap: 20px;
       margin: 10px 0;
       font-size: 1.2rem;
+      background: rgba(0,0,0,0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
     }
     .board {
       display: grid;
       gap: 2px;
-      background: #333;
-      padding: 4px;
-      margin: 10px auto;
-      border-radius: 6px;
+      background: #1e1e3f;
+      padding: 6px;
+      margin: 12px auto;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
       overflow: hidden;
     }
     .cell {
-      width: 40px;
-      height: 40px;
-      background: #222;
-      border-radius: 4px;
+      width: 42px;
+      height: 42px;
+      background: #2d2d5f;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .cell::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
     }
     .cell.filled {
-      background: #4e54c8;
+      background: #6a11cb;
+      box-shadow: inset 0 0 8px rgba(255,255,255,0.2);
     }
+    .cell.clearing {
+      animation: fadeOutScale 0.4s forwards;
+    }
+    @keyframes fadeOutScale {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+
     .preview-area {
       display: flex;
       justify-content: center;
-      gap: 12px;
+      gap: 16px;
       margin: 16px 0;
       flex-wrap: wrap;
     }
     .piece {
       display: grid;
       gap: 2px;
-      padding: 4px;
-      background: #333;
-      border-radius: 6px;
+      padding: 6px;
+      background: #2a2a5a;
+      border-radius: 8px;
       cursor: grab;
+      transition: transform 0.2s;
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .piece.shake {
+      animation: shake 0.5s;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
     }
     .piece-cell {
-      width: 20px;
-      height: 20px;
-      background: #4e54c8;
-      border-radius: 3px;
+      width: 22px;
+      height: 22px;
+      background: #8e2de2;
+      border-radius: 5px;
+      box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
     }
     .controls {
-      margin: 10px 0;
+      margin: 14px 0;
     }
     button {
-      background: #4e54c8;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
       color: white;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 1rem;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-size: 1.05rem;
       cursor: pointer;
-      margin: 4px;
+      margin: 6px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
     button:hover {
-      background: #6a71e6;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    }
+    button:active {
+      transform: translateY(1px);
     }
     .settings {
       margin-top: 16px;
       text-align: center;
     }
-    .difficulty {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
+    .difficulty button {
+      background: #4a4a7a;
     }
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 10;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s;
+      transition: opacity 0.4s;
     }
     .modal.active {
       opacity: 1;
       pointer-events: all;
     }
     .modal-content {
-      background: #2a2a4a;
-      padding: 20px;
-      border-radius: 12px;
+      background: rgba(30,30,60,0.95);
+      padding: 24px;
+      border-radius: 16px;
       text-align: center;
       max-width: 90%;
-      width: 300px;
+      width: 320px;
+      border: 1px solid #5a5a9a;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
     @media (max-width: 500px) {
-      .cell { width: 32px; height: 32px; }
-      .piece-cell { width: 16px; height: 16px; }
+      .cell { width: 34px; height: 34px; }
+      .piece-cell { width: 18px; height: 18px; }
+      h1 { font-size: 1.5rem; }
     }
   </style>
 </head>
 <body>
-  <h1>Block Blast</h1>
+  <h1>Block Blast 🧊</h1>
   <div class="stats">
     <div>Счёт: <span id="score">0</span></div>
     <div>Рекорд: <span id="highscore">0</span></div>
@@ -142,46 +188,60 @@
   <div class="preview-area" id="preview-area"></div>
 
   <div class="controls">
-    <button id="new-game">Новая игра</button>
-    <button id="settings-btn">Настройки</button>
+    <button id="new-game">🔁 Новая игра</button>
+    <button id="settings-btn">⚙️ Настройки</button>
   </div>
 
   <!-- Settings Modal -->
   <div class="modal" id="settings-modal">
     <div class="modal-content">
-      <h3>Сложность</h3>
+      <h3 style="margin-bottom:16px">🎮 Сложность</h3>
       <div class="difficulty">
-        <button data-diff="5">Лёгкий (5×5)</button>
-        <button data-diff="6">Средний (6×6)</button>
+        <button data-diff="5">Лёгкий (5×5)</button><br>
+        <button data-diff="6">Средний (6×6)</button><br>
         <button data-diff="7">Сложный (7×7)</button>
       </div>
-      <button id="close-settings" style="margin-top: 16px;">Закрыть</button>
+      <button id="close-settings" style="margin-top: 20px;">Закрыть</button>
     </div>
   </div>
 
   <script>
-    // Конфигурация
+    // 🔷 БОЛЬШЕ ФИГУР — 33 штуки!
     const PIECES = [
-      // Одноклеточные
+      // 1x1
       [[1]],
-      // Двухклеточные
-      [[1,1]],
-      [[1],[1]],
-      // Трёхклеточные
-      [[1,1,1]],
-      [[1],[1],[1]],
-      [[1,1],[0,1]],
-      [[1,1],[1,0]],
-      [[1,0],[1,1]],
-      [[0,1],[1,1]],
-      // L-образные и др.
-      [[1,0],[1,0],[1,1]],
-      [[0,1],[0,1],[1,1]],
-      [[1,1,1],[1,0,0]],
-      [[1,1,1],[0,0,1]],
+      // 2x1 / 1x2
+      [[1,1]], [[1],[1]],
+      // 3x1 / 1x3
+      [[1,1,1]], [[1],[1],[1]],
+      // L-образные (3+1)
+      [[1,0],[1,0],[1,1]], [[0,1],[0,1],[1,1]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]],
+      [[1,1],[1,0]], [[1,1],[0,1]], [[1,0],[1,1]], [[0,1],[1,1]],
+      // T-образные
+      [[1,1,1],[0,1,0]], [[1,0],[1,1],[1,0]], [[0,1],[1,1],[0,1]], [[1,1],[0,1],[0,1]],
+      // Z / S
+      [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]],
+      [[1,0],[1,1],[0,1]], [[0,1],[1,1],[1,0]],
+      // 2x2
+      [[1,1],[1,1]],
+      // 3x2 и 2x3 (разные формы)
+      [[1,1,1],[1,1,0]], [[1,1,0],[1,1,1]], [[1,1],[1,1],[1,0]], [[1,0],[1,1],[1,1]],
+      // "Уголки" 3x3 (меньше клеток)
+      [[1,0,0],[1,1,0],[0,1,0]], [[0,0,1],[0,1,1],[0,1,0]],
+      [[1,1,0],[0,1,1],[0,0,1]], [[0,1,1],[1,1,0],[1,0,0]],
+      // "Крест" 3x3
+      [[0,1,0],[1,1,1],[0,1,0]],
+      // "Квадрат с хвостом"
+      [[1,1],[1,1],[1,0]], [[1,1],[1,1],[0,1]],
+      [[1,1,1],[1,0,1]],
+      // Новые "сложные":
+      [[1,0,1],[0,1,0],[1,0,1]], // X
+      [[1,1,0,0],[0,1,1,0]],    // длинная Z
+      [[1,0,0],[1,1,0],[0,1,1]], // лесенка
+      [[0,1,0],[1,1,1],[1,0,1]], // "головастик"
     ];
 
-    // Состояние игры
+    // 💾 Глобальное состояние
     let boardSize = 5;
     let board = [];
     let previewPieces = [];
@@ -189,9 +249,9 @@
     let isDragging = false;
     let draggedPiece = null;
     let draggedOffset = { x: 0, y: 0 };
-    let highscore = localStorage.getItem('blockblast_highscore') || 0;
+    let highscore = parseInt(localStorage.getItem('blockblast_highscore')) || 0;
 
-    // DOM
+    // 🔗 Элементы DOM
     const boardEl = document.getElementById('board');
     const previewEl = document.getElementById('preview-area');
     const scoreEl = document.getElementById('score');
@@ -201,7 +261,7 @@
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings');
 
-    // Инициализация
+    // ✅ Инициализация
     highscoreEl.textContent = highscore;
     initGame();
 
@@ -256,17 +316,15 @@
 
         for (let r = 0; r < piece.length; r++) {
           for (let c = 0; c < piece[r].length; c++) {
+            const cell = document.createElement('div');
             if (piece[r][c]) {
-              const cell = document.createElement('div');
               cell.className = 'piece-cell';
-              pieceEl.appendChild(cell);
-            } else {
-              pieceEl.appendChild(document.createElement('div'));
             }
+            pieceEl.appendChild(cell);
           }
         }
 
-        // Drag events
+        // 🖱️ Драг-события
         pieceEl.addEventListener('mousedown', startDrag);
         pieceEl.addEventListener('touchstart', startDrag, { passive: false });
 
@@ -274,7 +332,7 @@
       });
     }
 
-    // === DRAG & DROP (мышь + touch) ===
+    // 🖱️ DRAG & DROP (универсальный)
     function startDrag(e) {
       e.preventDefault();
       isDragging = true;
@@ -285,9 +343,9 @@
       draggedOffset.x = clientX - rect.left;
       draggedOffset.y = clientY - rect.top;
 
-      // Визуал
-      draggedPiece.style.opacity = '0.6';
+      draggedPiece.style.opacity = '0.7';
       draggedPiece.style.cursor = 'grabbing';
+      draggedPiece.style.zIndex = '100';
 
       document.addEventListener('mousemove', drag);
       document.addEventListener('touchmove', drag, { passive: false });
@@ -310,18 +368,17 @@
       if (!isDragging) return;
       isDragging = false;
 
-      // Сброс стилей
       draggedPiece.style.opacity = '1';
       draggedPiece.style.transform = '';
       draggedPiece.style.cursor = 'grab';
+      draggedPiece.style.zIndex = '';
 
-      // Удаление обработчиков
       document.removeEventListener('mousemove', drag);
       document.removeEventListener('touchmove', drag);
       document.removeEventListener('mouseup', endDrag);
       document.removeEventListener('touchend', endDrag);
 
-      // Попытка разместить
+      // ✅ Попытка поставить
       const boardRect = boardEl.getBoundingClientRect();
       const pieceRect = draggedPiece.getBoundingClientRect();
 
@@ -334,44 +391,23 @@
         centerY >= boardRect.top &&
         centerY <= boardRect.bottom
       ) {
-        // Преобразуем координаты в ячейку
         const cellSize = boardRect.width / boardSize;
         const col = Math.floor((centerX - boardRect.left) / cellSize);
         const row = Math.floor((centerY - boardRect.top) / cellSize);
 
         const idx = parseInt(draggedPiece.dataset.idx);
-        placePiece(idx, row, col);
+        if (canPlace(previewPieces[idx], row, col)) {
+          placePiece(idx, row, col);
+        } else {
+          // ❌ Тряска!
+          draggedPiece.classList.add('shake');
+          setTimeout(() => draggedPiece.classList.remove('shake'), 500);
+        }
       }
-
-      // Обновляем превью
       renderPreview();
     }
 
-    // === ЛОГИКА ИГРЫ ===
-    function placePiece(pieceIdx, row, col) {
-      const piece = previewPieces[pieceIdx];
-      if (!canPlace(piece, row, col)) return;
-
-      // Устанавливаем
-      for (let r = 0; r < piece.length; r++) {
-        for (let c = 0; c < piece[r].length; c++) {
-          if (piece[r][c]) {
-            board[row + r][col + c] = 1;
-          }
-        }
-      }
-
-      // Удаляем использованную фигуру
-      previewPieces.splice(pieceIdx, 1);
-      // Добавляем новую
-      const newIdx = Math.floor(Math.random() * PIECES.length);
-      previewPieces.push(JSON.parse(JSON.stringify(PIECES[newIdx])));
-
-      renderBoard();
-      checkLines();
-      checkGameOver();
-    }
-
+    // 🧩 ЛОГИКА РАЗМЕЩЕНИЯ
     function canPlace(piece, row, col) {
       for (let r = 0; r < piece.length; r++) {
         for (let c = 0; c < piece[r].length; c++) {
@@ -385,42 +421,64 @@
       return true;
     }
 
-    function checkLines() {
-      let cleared = 0;
-
-      // Проверка строк
-      for (let r = 0; r < boardSize; r++) {
-        if (board[r].every(cell => cell === 1)) {
-          board[r] = Array(boardSize).fill(0);
-          cleared++;
+    function placePiece(pieceIdx, row, col) {
+      const piece = previewPieces[pieceIdx];
+      // Установка
+      for (let r = 0; r < piece.length; r++) {
+        for (let c = 0; c < piece[r].length; c++) {
+          if (piece[r][c]) {
+            board[row + r][col + c] = 1;
+          }
         }
       }
 
-      // Проверка столбцов
+      // Обновление превью
+      previewPieces.splice(pieceIdx, 1);
+      const newIdx = Math.floor(Math.random() * PIECES.length);
+      previewPieces.push(JSON.parse(JSON.stringify(PIECES[newIdx])));
+
+      renderBoard();
+      setTimeout(() => checkLines(), 100); // небольшая задержка для плавности
+      checkGameOver();
+    }
+
+    // ✨ АНИМАЦИИ ОЧИСТКИ
+    function checkLines() {
+      const cellsToClear = [];
+
+      // Строки
+      for (let r = 0; r < boardSize; r++) {
+        if (board[r].every(cell => cell === 1)) {
+          for (let c = 0; c < boardSize; c++) {
+            cellsToClear.push({ r, c });
+          }
+        }
+      }
+
+      // Столбцы
       for (let c = 0; c < boardSize; c++) {
         let full = true;
         for (let r = 0; r < boardSize; r++) {
           if (board[r][c] !== 1) {
-            full = false;
-            break;
+            full = false; break;
           }
         }
         if (full) {
-          for (let r = 0; r < boardSize; r++) board[r][c] = 0;
-          cleared++;
+          for (let r = 0; r < boardSize; r++) {
+            cellsToClear.push({ r, c });
+          }
         }
       }
 
-      // Проверка 3×3 квадратов (если размер >=3)
+      // Квадраты 3×3
       if (boardSize >= 3) {
         for (let r = 0; r <= boardSize - 3; r++) {
           for (let c = 0; c <= boardSize - 3; c++) {
             let full = true;
             for (let dr = 0; dr < 3; dr++) {
               for (let dc = 0; dc < 3; dc++) {
-                if (board[r + dr][c + dc] !== 1) {
-                  full = false;
-                  break;
+                if (board[r+dr][c+dc] !== 1) {
+                  full = false; break;
                 }
               }
               if (!full) break;
@@ -428,35 +486,44 @@
             if (full) {
               for (let dr = 0; dr < 3; dr++) {
                 for (let dc = 0; dc < 3; dc++) {
-                  board[r + dr][c + dc] = 0;
+                  cellsToClear.push({ r: r+dr, c: c+dc });
                 }
               }
-              cleared++;
             }
           }
         }
       }
 
-      if (cleared > 0) {
-        score += cleared * 100;
+      if (cellsToClear.length > 0) {
+        // Анимация исчезновения
+        cellsToClear.forEach(({r, c}) => {
+          const cellEl = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+          if (cellEl) cellEl.classList.add('clearing');
+        });
+
+        score += cellsToClear.length * 10; // бонус за клетки
         scoreEl.textContent = score;
+
+        // Через 400ms — очистка в массиве
+        setTimeout(() => {
+          cellsToClear.forEach(({r, c}) => {
+            board[r][c] = 0;
+          });
+          renderBoard();
+        }, 400);
       }
     }
 
     function checkGameOver() {
-      // Проверяем, можно ли поставить хотя бы одну из фигур
-      for (let pieceIdx = 0; pieceIdx < previewPieces.length; pieceIdx++) {
-        const piece = previewPieces[pieceIdx];
+      for (let piece of previewPieces) {
         for (let r = 0; r < boardSize; r++) {
           for (let c = 0; c < boardSize; c++) {
-            if (canPlace(piece, r, c)) {
-              return; // Есть куда поставить — игра не окончена
-            }
+            if (canPlace(piece, r, c)) return;
           }
         }
       }
 
-      // Конец игры
+      // 🏁 Игра окончена
       if (score > highscore) {
         highscore = score;
         localStorage.setItem('blockblast_highscore', highscore);
@@ -464,20 +531,14 @@
       }
 
       setTimeout(() => {
-        alert(`Игра окончена!\nВаш счёт: ${score}`);
-      }, 100);
+        alert(`🎮 Игра окончена!\nВаш счёт: ${score}${score === highscore ? '\n🏆 Новый рекорд!' : ''}`);
+      }, 300);
     }
 
-    // === ОБРАБОТЧИКИ ===
+    // 🎛️ Обработчики кнопок
     newGameBtn.addEventListener('click', initGame);
-
-    settingsBtn.addEventListener('click', () => {
-      settingsModal.classList.add('active');
-    });
-
-    closeSettingsBtn.addEventListener('click', () => {
-      settingsModal.classList.remove('active');
-    });
+    settingsBtn.addEventListener('click', () => settingsModal.classList.add('active'));
+    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
 
     document.querySelectorAll('[data-diff]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -487,7 +548,6 @@
       });
     });
 
-    // Запрет прокрутки при touchmove на драге (чтобы не дергалось)
     document.body.addEventListener('touchmove', e => {
       if (isDragging) e.preventDefault();
     }, { passive: false });
